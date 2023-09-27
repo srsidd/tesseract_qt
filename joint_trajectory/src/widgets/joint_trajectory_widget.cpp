@@ -47,8 +47,11 @@
 #include <tesseract_visualization/trajectory_player.h>
 
 #include <QTimer>
+#include <QTime>
+#include <QPoint>
 #include <QFileDialog>
 #include <set>
+#include <iostream>
 
 const double SLIDER_RESOLUTION = 0.001;
 
@@ -454,6 +457,45 @@ bool JointTrajectoryWidget::eventFilter(QObject* obj, QEvent* event)
     auto* e = static_cast<events::JointTrajectoryRemoveSelected*>(event);
     if (e->getComponentInfo() == data_->model->getComponentInfo())
       onRemove();
+  }
+  else if (event->type() == events::JointTrajectoryAdd::kType)
+  {
+      QModelIndex current_index = ui_->trajectoryTreeView->model()->index(0, 0, ui_->trajectoryTreeView->model()->index(0, 0));
+
+      auto* toolbar_event = new events::JointTrajectoryToolbarState(data_->model->getComponentInfo());
+      toolbar_event->save_enabled = true;
+      toolbar_event->remove_enabled = true;
+      toolbar_event->plot_enabled = true;
+      QApplication::sendEvent(qApp, toolbar_event);
+
+      auto jts = data_->model->getJointTrajectorySet(current_index);
+
+      if (jts.getEnvironment() != nullptr && data_->current_environment != jts.getEnvironment() &&
+          jts.getEnvironment()->isInitialized())
+      {
+        data_->current_environment = jts.getEnvironment();
+
+        // If no parent then it using the top most so no need to overwrite existing environment
+        if (data_->model->getComponentInfo()->hasParent())
+        {
+          auto env_wrapper =
+              std::make_shared<DefaultEnvironmentWrapper>(data_->model->getComponentInfo(), jts.getEnvironment());
+          EnvironmentManager::set(env_wrapper);
+        }
+      }
+
+      data_->current_trajectory = tesseract_common::JointTrajectoryInfo();
+      data_->current_trajectory.first = jts.getInitialState();
+      for (const auto& t : jts.getJointTrajectories())
+        data_->current_trajectory.second.insert(
+            data_->current_trajectory.second.end(), t.second.begin(), t.second.end());
+
+      data_->player->setTrajectory(data_->current_trajectory.second);
+
+      if (!data_->current_trajectory.second.empty())
+        onEnablePlayer();
+
+    onPlayButtonClicked();
   }
 
   // Standard event processing
