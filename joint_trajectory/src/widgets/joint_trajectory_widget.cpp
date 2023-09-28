@@ -145,6 +145,8 @@ JointTrajectoryWidget::JointTrajectoryWidget(std::shared_ptr<const ComponentInfo
 
     connect(data_->save_dialog.get(), SIGNAL(finished(int)), this, SLOT(onSaveFinished(int)));
   }
+  
+  current_traj_ = 0;
 
   // Install event filter for interactive view controller
   qGuiApp->installEventFilter(this);
@@ -460,7 +462,8 @@ bool JointTrajectoryWidget::eventFilter(QObject* obj, QEvent* event)
   }
   else if (event->type() == events::JointTrajectoryAdd::kType)
   {
-      QModelIndex current_index = ui_->trajectoryTreeView->model()->index(0, 0, ui_->trajectoryTreeView->model()->index(0, 0));
+      QModelIndex current_index = ui_->trajectoryTreeView->model()->index(current_traj_, 0, ui_->trajectoryTreeView->model()->index(0, 0));
+      current_traj_++;
 
       auto* toolbar_event = new events::JointTrajectoryToolbarState(data_->model->getComponentInfo());
       toolbar_event->save_enabled = true;

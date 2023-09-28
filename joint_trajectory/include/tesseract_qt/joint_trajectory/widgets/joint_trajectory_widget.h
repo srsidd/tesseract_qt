@@ -100,6 +100,7 @@ protected:
   struct Implementation;
   std::unique_ptr<Ui::JointTrajectoryWidget> ui_;
   std::unique_ptr<Implementation> data_;
+  int current_traj_;
 
   // Documentation inherited
   bool eventFilter(QObject* obj, QEvent* event) override;
